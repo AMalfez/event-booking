@@ -50,8 +50,10 @@ PORT=3000
 MONGO_URI=mongodb://localhost:27017/event-booking
 JWT_SECRET=your_super_secret_key_here
 JWT_EXPIRES_IN=7d
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
+REDIS_HOST=your_redis_cloud_host
+REDIS_PORT=13956
+REDIS_PASSWORD=your_redis_cloud_password
+REDIS_USERNAME=default
 ```
 
 ---
