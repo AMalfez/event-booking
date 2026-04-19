@@ -1,0 +1,313 @@
+# ╔══════════════════════════════════════════════════════════╗
+# ║           Event Booking System — API Test File           ║
+# ║     Use with REST Client extension in VS Code            ║
+# ╚══════════════════════════════════════════════════════════╝
+
+@baseUrl = http://localhost:3000/api
+
+# After login, copy the token from the response and paste below
+@organizerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZTQ3NzBlOGE4MGFmMjZhMmM5NDY4ZCIsImlhdCI6MTc3NjU4MDU0OSwiZXhwIjoxNzc3MTg1MzQ5fQ.ELjhYGVWICGUer3Zy1Vk9e3gMuaQjmhlWQOTJnM-51E
+@customerToken  = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZTQ3NmZmOGE4MGFmMjZhMmM5NDY4YiIsImlhdCI6MTc3NjU4MDQwOSwiZXhwIjoxNzc3MTg1MjA5fQ.pkzqNWNGZsaIVh_S7MXND6fB7VpsQv2eqZfFD6nuTg4
+
+# After creating an event, paste the _id below
+@eventId = 69e478118a80af26a2c94694
+
+# After booking a ticket, paste the _id below
+@ticketId = 69e479148a80af26a2c946a3
+
+
+# ================================================================
+# 🔐 AUTH
+# ================================================================
+
+### 1. Register — Organizer
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Ali Organizer",
+  "email": "ali@test.com",
+  "password": "pass123",
+  "role": "organizer"
+}
+
+###
+
+### 2. Register — Customer
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Sara Customer",
+  "email": "sara@test.com",
+  "password": "pass123",
+  "role": "customer"
+}
+
+###
+
+### 3. Login — Organizer (copy token → @organizerToken)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "ali@test.com",
+  "password": "pass123"
+}
+
+###
+
+### 4. Login — Customer (copy token → @customerToken)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "sara@test.com",
+  "password": "pass123"
+}
+
+###
+
+### 5. Get Current User — Organizer
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{organizerToken}}
+
+###
+
+### 6. Get Current User — Customer
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{customerToken}}
+
+###
+
+
+# ================================================================
+# 📅 EVENTS — Public (no auth needed)
+# ================================================================
+
+### 7. Browse All Events
+GET {{baseUrl}}/events
+
+###
+
+### 8. Browse Events — With Pagination
+GET {{baseUrl}}/events?page=1&limit=5
+
+###
+
+### 9. Browse Events — Filter by Status
+GET {{baseUrl}}/events?status=upcoming
+
+###
+
+### 10. Get Single Event
+GET {{baseUrl}}/events/{{eventId}}
+
+###
+
+
+# ================================================================
+# 📅 EVENTS — Organizer (requires organizer JWT)
+# ================================================================
+
+### 11. Create Event (copy _id from response → @eventId)
+POST {{baseUrl}}/events
+Authorization: Bearer {{organizerToken}}
+Content-Type: application/json
+
+{
+  "title": "Jaipur Literature Festival",
+  "description": "The greatest literary show on earth, held annually in Jaipur.",
+  "date": "2026-01-24T09:00:00.000Z",
+  "venue": "Diggi Palace, Jaipur",
+  "totalTickets": 100,
+  "ticketPrice": 299
+}
+
+###
+
+### 12. Create Second Event (to test multiple events)
+POST {{baseUrl}}/events
+Authorization: Bearer {{organizerToken}}
+Content-Type: application/json
+
+{
+  "title": "Jaipur Tech Summit",
+  "description": "Annual technology conference for developers and startups.",
+  "date": "2026-03-10T10:00:00.000Z",
+  "venue": "Hotel Clarks Amer, Jaipur",
+  "totalTickets": 50,
+  "ticketPrice": 999
+}
+
+###
+
+### 13. Get My Events (organizer sees only their own)
+GET {{baseUrl}}/events/organizer/my
+Authorization: Bearer {{organizerToken}}
+
+###
+
+### 14. Update Event (triggers background notification job)
+PATCH {{baseUrl}}/events/{{eventId}}
+Authorization: Bearer {{organizerToken}}
+Content-Type: application/json
+
+{
+  "venue": "Clarks Amer Hotel, Jaipur",
+  "ticketPrice": 349
+}
+
+###
+
+### 15. Update Event — Change Ticket Count
+PATCH {{baseUrl}}/events/{{eventId}}
+Authorization: Bearer {{organizerToken}}
+Content-Type: application/json
+
+{
+  "totalTickets": 150
+}
+
+###
+
+### 16. Delete Event
+DELETE {{baseUrl}}/events/{{eventId}}
+Authorization: Bearer {{organizerToken}}
+
+###
+
+### ❌ 17. Create Event as Customer (should return 403)
+POST {{baseUrl}}/events
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "title": "Unauthorized Event",
+  "date": "2026-05-01T10:00:00.000Z",
+  "venue": "Nowhere",
+  "totalTickets": 10,
+  "ticketPrice": 100
+}
+
+###
+
+
+# ================================================================
+# 🎟️ TICKETS — Customer (requires customer JWT)
+# ================================================================
+
+### 18. Book Tickets (copy _id from response → @ticketId)
+POST {{baseUrl}}/tickets/book
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "eventId": "{{eventId}}",
+  "quantity": 2
+}
+
+###
+
+### 19. Book Tickets — Try to Overbuy (more than available)
+POST {{baseUrl}}/tickets/book
+Authorization: Bearer {{customerToken}}
+Content-Type: application/json
+
+{
+  "eventId": "{{eventId}}",
+  "quantity": 9999
+}
+
+###
+
+### 20. Get My Tickets
+GET {{baseUrl}}/tickets/my
+Authorization: Bearer {{customerToken}}
+
+###
+
+### 21. Get Single Ticket
+GET {{baseUrl}}/tickets/{{ticketId}}
+Authorization: Bearer {{customerToken}}
+
+###
+
+### 22. Cancel Ticket
+PATCH {{baseUrl}}/tickets/{{ticketId}}/cancel
+Authorization: Bearer {{customerToken}}
+
+###
+
+### ❌ 23. Book Ticket as Organizer (should return 403)
+POST {{baseUrl}}/tickets/book
+Authorization: Bearer {{organizerToken}}
+Content-Type: application/json
+
+{
+  "eventId": "{{eventId}}",
+  "quantity": 1
+}
+
+###
+
+
+# ================================================================
+# 🎟️ TICKETS — Organizer view
+# ================================================================
+
+### 24. Get All Bookings for an Event (organizer only)
+GET {{baseUrl}}/tickets/event/{{eventId}}
+Authorization: Bearer {{organizerToken}}
+
+###
+
+### ❌ 25. Get Event Bookings as Customer (should return 403)
+GET {{baseUrl}}/tickets/event/{{eventId}}
+Authorization: Bearer {{customerToken}}
+
+###
+
+
+# ================================================================
+# 🔒 EDGE CASES
+# ================================================================
+
+### 26. Access Protected Route Without Token (should return 401)
+GET {{baseUrl}}/auth/me
+
+###
+
+### 27. Login With Wrong Password (should return 401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "ali@test.com",
+  "password": "wrongpassword"
+}
+
+###
+
+### 28. Register With Duplicate Email (should return 409)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Duplicate",
+  "email": "ali@test.com",
+  "password": "pass123",
+  "role": "organizer"
+}
+
+###
+
+### 29. Get Non-Existent Event (should return 404)
+GET {{baseUrl}}/events/000000000000000000000000
+
+###
+
+### 30. Health Check
+GET http://localhost:3000/health
+
+###
